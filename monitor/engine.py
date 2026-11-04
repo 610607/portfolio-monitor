@@ -247,6 +247,15 @@ class Run:
         order = {g: i for i, g in enumerate(GROUPS)}
         cal_sym = str(self.inp.get("calendar") or "VT").upper()
         self.triggers.sort(key=lambda t: (order[t["group"]], t["symbol"] != cal_sym, t["symbol"]))
+        # 同一标的、同一条件被几组规则同时命中（例如 VT 既是大盘信号又是核心指数），只留排在前面的组
+        seen: set[tuple[str, str]] = set()
+        kept = []
+        for t in self.triggers:
+            key = (t["symbol"], t["condition"].replace(" ", ""))
+            if key not in seen:
+                seen.add(key)
+                kept.append(t)
+        self.triggers = kept
         empty = last is None
         return {
             "date": str(self.date.date()),

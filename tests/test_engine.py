@@ -155,3 +155,11 @@ def test_recent_dividends_and_cut_flag():
     assert res["dividends"] == [{"symbol": "O", "ex_date": "2025-12-01", "amount": 0.4, "prev3_min": 0.5,
                                  "below_prev3": True}]
     assert res["categories"]["个股"]["market_value"] == 500.0
+
+
+def test_same_condition_in_two_groups_kept_once():
+    vt = make_bars([100.0] * 20 + [89.0])
+    inp = base_input(date=str(vt.index[-1].date()), targets=[{"symbol": "VT", "category": "核心指数"}],
+                     rules="核心指数 | 信息 | 距52周高 <= -10% | 回撤跨过 −10%\nVT | 加仓 | 距52周高 <= -10% | 大盘第一档")
+    res = engine.run(inp, fetch=fake_fetch({"VT": vt}))
+    assert [(t["group"], t["action"]) for t in res["triggers"]] == [("加仓", "大盘第一档")]
