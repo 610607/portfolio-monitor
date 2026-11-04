@@ -133,12 +133,15 @@ def test_dividend_yield_trailing():
     assert abs(y.iloc[-1] - 1.5 / 50) < 1e-12
 
 
-def test_market_closed_flag():
-    vt = make_bars([100.0] * 10)
+def test_market_closed_skips_rules():
+    vt = make_bars([100.0] * 9 + [80.0])
     inp = base_input(date=str((vt.index[-1] + pd.Timedelta(days=1)).date()),
-                     targets=[{"symbol": "VT", "category": "核心指数"}])
+                     targets=[{"symbol": "VT", "category": "核心指数", "position": 1}],
+                     rules="VT | 加仓 | 单日 <= -10% | x | 每天")
     res = engine.run(inp, fetch=fake_fetch({"VT": vt}))
     assert res["trading_day"] is False
+    assert res["triggers"] == []                       # 不重复报上一个交易日的触发
+    assert res["snapshot"]["rows"]["VT"]["收盘"] == 80.0
 
 
 def test_recent_dividends_and_cut_flag():

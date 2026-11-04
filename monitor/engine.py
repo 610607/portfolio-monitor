@@ -237,7 +237,10 @@ class Run:
         stale = [s for s, c in self.contexts.items() if c.index[-1] < last]
         for s in stale:
             self.notes.append(f"{s}：最新行情停在 {self.contexts[s].index[-1].date()}，比 {cal.symbol} 旧")
-        self.evaluate()
+        if trading_day:
+            self.evaluate()
+        else:  # 休市：最后两根日线就是上一次运行看过的，再判断会重复报
+            self.notes.append(f"{self.date.date()} 没有新日线（休市），未判断规则；快照用 {last.date()} 收盘")
         return self._result(last, trading_day)
 
     def _result(self, last, trading_day: bool) -> dict:
